@@ -25,14 +25,14 @@ var _ = Describe("Concurrency", func() {
 
 	Context("when using a process", func() {
 		It("should write the return value to a channel", func() {
-			ret := <-Process(func() Return {
-				return Value(1 + 2)
+			ret := <-Process(func() Option {
+				return Ok(1 + 2)
 			})
-			Ω(ret.Value).Should(Equal(3))
+			Ω(ret.Ok).Should(Equal(3))
 		})
 
 		It("should write the error to a channel", func() {
-			ret := <-Process(func() Return {
+			ret := <-Process(func() Option {
 				return Err(errors.New("this is an error"))
 			})
 			Ω(ret.Err).Should(HaveOccurred())

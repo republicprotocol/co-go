@@ -34,14 +34,14 @@ func ForAll(data interface{}, f func(i int)) {
 // Option types are returned from Process functions. They are either a value or
 // an error. The error should be checked before using the value.
 type Option struct {
-	Value interface{}
-	Err   error
+	Ok  interface{}
+	Err error
 }
 
-// Some returns an Option struct with a value and no error.
-func Some(v interface{}) Option {
+// Ok returns an Option struct with a value and no error.
+func Ok(ok interface{}) Option {
 	return Option{
-		Value: v,
+		Ok: ok,
 	}
 }
 

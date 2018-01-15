@@ -9,7 +9,7 @@ The Do Concurrently library is a Go implementation of high level concurrent feat
 
 The `ForAll` loop is a data parallel loop that distributes iterations evenly across several goroutines. It will launch one goroutine per CPU, and can be used on arrays, maps, and slices.
 
-```
+```go
 xs := []int{1,2,3,4,5,6,7,8,10}
 do.ForAll(xs, func(i int) {
     xs[i] *= 2
@@ -21,6 +21,13 @@ It is the responsibility of the programmer to ensure that the function being use
 ## Process
 
 A `Process` is a function that is executed concurrently and its return value is written to a channel. Using channels to handle return values is simpler and safer than trying to synchronize using share memory. The official Go documentation recommends the use of channels over shared memory.
+
+```go
+ret := <- do.Process(func() do.Option {
+    return do.Value(40 + 2)
+})
+
+```
 
 ## Tests
 
