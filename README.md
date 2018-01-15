@@ -1,9 +1,9 @@
-# Concurrency
+# Do Concurrently
 
 [![Build Status](https://travis-ci.org/republicprotocol/go-async.svg?branch=master)](https://travis-ci.org/republicprotocol/go-async)
 [![Coverage Status](https://coveralls.io/repos/github/republicprotocol/go-async/badge.svg?branch=master)](https://coveralls.io/github/republicprotocol/go-async?branch=master)
 
-The Concurrency library is a Go implementation of high level concurrent features. It provides a simple API for common task parallel and data parallel constructs. Using goroutines, the parallelism provided is actually a form of concurrency since goroutines are not guaranteed to run strict simultaneity.
+The Do Concurrently library is a Go implementation of high level concurrent features. It provides a simple API for common task parallel and data parallel constructs. Using goroutines, the parallelism provided is actually a form of concurrency since goroutines are not guaranteed to run strict simultaneity.
 
 ## For all
 
@@ -34,4 +34,4 @@ ginkgo -v --trace --cover --coverprofile coverprofile.out
 
 ## License
 
-The Concurrency library was developed by the Republic Protocol team and is available under the MIT license. For more information, see our website https://republicprotocol.com.
+The Do Concurrently library was developed by the Republic Protocol team and is available under the MIT license. For more information, see our website https://republicprotocol.com.
