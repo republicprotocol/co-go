@@ -1,7 +1,7 @@
 # Do Concurrently
 
-[![Build Status](https://travis-ci.org/republicprotocol/go-async.svg?branch=master)](https://travis-ci.org/republicprotocol/go-async)
-[![Coverage Status](https://coveralls.io/repos/github/republicprotocol/go-async/badge.svg?branch=master)](https://coveralls.io/github/republicprotocol/go-async?branch=master)
+[![Build Status](https://travis-ci.org/republicprotocol/go-do.svg?branch=master)](https://travis-ci.org/republicprotocol/go-do)
+[![Coverage Status](https://coveralls.io/repos/github/republicprotocol/go-do/badge.svg?branch=master)](https://coveralls.io/github/republicprotocol/go-do?branch=master)
 
 The Do Concurrently library is a Go implementation of high level concurrent features. It provides a simple API for common task parallel and data parallel constructs. Using goroutines, the parallelism provided is actually a form of concurrency since goroutines are not guaranteed to run strict simultaneity.
 
