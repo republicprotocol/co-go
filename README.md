@@ -24,9 +24,9 @@ A `Process` is a function that is executed concurrently and its return value is 
 
 ```go
 ret := <- do.Process(func() do.Option {
-    return do.Value(40 + 2)
+    return do.Ok(40 + 2)
 })
-
+log.Println("42 =", ret)
 ```
 
 ## Tests
