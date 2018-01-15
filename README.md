@@ -5,7 +5,7 @@
 
 The Do Concurrently library is a Go implementation of high level concurrent features. It provides a simple API for common task parallel and data parallel constructs. Using goroutines, the parallelism provided is actually a form of concurrency since goroutines are not guaranteed to run strict simultaneity.
 
-## For all
+## For All
 
 The `ForAll` loop is a data parallel loop that distributes iterations evenly across several goroutines. It will launch one goroutine per CPU, and can be used on arrays, maps, and slices.
 
@@ -40,7 +40,7 @@ go get github.com/onsi/ginkgo/ginkgo
 Now we can run the tests.
 
 ```
-ginkgo -v --trace --cover --coverprofile coverprofile.out
+ginkgo -v --race --trace --cover --coverprofile coverprofile.out
 ```
 
 ## License
