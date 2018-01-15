@@ -30,3 +30,34 @@ func ForAll(data interface{}, f func(i int)) {
 		wg.Wait()
 	}
 }
+
+// Return values are returned from Process functions. They contain an error and
+// a value. The error should be checked before using the value.
+type Return struct {
+	Value interface{}
+	Err   error
+}
+
+// Value returns a Return struct with a value and no error.
+func Value(v interface{}) Return {
+	return Return{
+		Value: v,
+	}
+}
+
+// Err returns a Return struct with an error and no value.
+func Err(err error) Return {
+	return Return{
+		Err: err,
+	}
+}
+
+// Process runs the function in a goroutine and writes the return value to a
+// channel.
+func Process(f func() Return) chan Return {
+	ch := make(chan Return)
+	go func() {
+		ch <- f()
+	}()
+	return ch
+}

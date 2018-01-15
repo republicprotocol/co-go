@@ -18,6 +18,10 @@ do.ForAll(xs, func(i int) {
 
 It is the responsibility of the programmer to ensure that the function being used is safe for concurrent environments. A simple way of ensuring this is checking that the function will never mutate any object other than the object accessible using the `i` index. You can also use the go tools to check for race conditions during testing.
 
+## Process
+
+A `Process` is a function that is executed concurrently and its return value is written to a channel. Using channels to handle return values is simpler and safer than trying to synchronize using share memory. The official Go documentation recommends the use of channels over shared memory.
+
 ## Tests
 
 To run the test suite, install Ginkgo.
