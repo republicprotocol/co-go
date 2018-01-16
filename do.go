@@ -57,8 +57,8 @@ func ForAll(data interface{}, f func(i int)) {
 		numIterationsPerCPU := (length / numCPUs) + 1
 		// Apply the function in parallel over the data.
 		var wg sync.WaitGroup
-		wg.Add(numCPUs)
 		for offset := 0; offset < length; offset += numIterationsPerCPU {
+			wg.Add(1)
 			go func(offset int) {
 				defer wg.Done()
 				for i := offset; i < offset+numIterationsPerCPU && i < length; i++ {
@@ -122,8 +122,8 @@ func Begin(fs ...func() Option) []Option {
 	// Apply the functions in parallel.
 	output := make([]Option, length)
 	var wg sync.WaitGroup
-	wg.Add(numCPUs)
 	for offset := 0; offset < length; offset += numIterationsPerCPU {
+		wg.Add(1)
 		go func(offset int) {
 			defer wg.Done()
 			for i := offset; i < offset+numIterationsPerCPU && i < length; i++ {

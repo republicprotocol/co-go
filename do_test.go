@@ -70,4 +70,34 @@ var _ = Describe("Concurrency", func() {
 		})
 	})
 
+	Context("when using begin", func() {
+		It("should wait until all functions have terminated", func() {
+			i := int64(0)
+			Begin(func() Option {
+				atomic.AddInt64(&i, 1)
+				return Ok(nil)
+			}, func() Option {
+				atomic.AddInt64(&i, 2)
+				return Ok(nil)
+			}, func() Option {
+				atomic.AddInt64(&i, 3)
+				return Ok(nil)
+			})
+			Ω(i).Should(Equal(int64(6)))
+		})
+
+		It("should collect all function return values", func() {
+			results := Begin(func() Option {
+				return Ok(0)
+			}, func() Option {
+				return Ok(1)
+			}, func() Option {
+				return Ok(2)
+			})
+			Ω(results[0].Ok).Should(Equal(0))
+			Ω(results[1].Ok).Should(Equal(1))
+			Ω(results[2].Ok).Should(Equal(2))
+		})
+	})
+
 })
