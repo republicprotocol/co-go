@@ -12,6 +12,21 @@ import (
 
 var _ = Describe("Concurrency", func() {
 
+	Context("when using an optional value", func() {
+		It("should correctly chain calls to then", func() {
+			Ok(true).Then(func(ok interface{}) Option {
+				Ω(ok).Should(Equal(true))
+				return Ok(true)
+			}).Then(func(ok interface{}) Option {
+				Ω(ok).Should(Equal(true))
+				return Err(errors.New("this is an error"))
+			}).Then(func(err interface{}) Option {
+				Ω(true).Should(Equal(false))
+				return Err(nil)
+			})
+		})
+	})
+
 	Context("when using a for all loop", func() {
 		It("should apply the function to all items", func() {
 			xs := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
