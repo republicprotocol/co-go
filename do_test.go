@@ -16,29 +16,53 @@ var _ = Describe("Concurrency", func() {
 		It("should correctly execute calls to then", func() {
 			i := 0
 			Ok(true).Then(func(ok interface{}) Option {
+				// This should happen.
 				i++
 				Ω(ok).Should(Equal(true))
-				return Err(errors.New("this is an error"))
+				return Ok(true)
 			}).Then(func(ok interface{}) Option {
+				// This should happen.
+				i++
+				Ω(ok).Should(Equal(true))
+				return Ok(true)
+			}).Catch(func(err error) Option {
+				// This should not happen.
 				i++
 				Ω(true).Should(Equal(false))
 				return Err(nil)
+			}).Then(func(ok interface{}) Option {
+				// This should happen.
+				i++
+				Ω(ok).Should(Equal(true))
+				return Ok(true)
 			})
-			Ω(i).Should(Equal(1))
+			Ω(i).Should(Equal(3))
 		})
 
 		It("should correctly execute calls to catch", func() {
 			i := 0
-			Err(errors.New("this is an error")).Then(func(ok interface{}) Option {
+			Err(errors.New("this is an error")).Catch(func(err error) Option {
+				// This should happen.
+				i++
+				Ω(err).Should(HaveOccurred())
+				return Err(err)
+			}).Catch(func(err error) Option {
+				// This should happen.
+				i++
+				Ω(err).Should(HaveOccurred())
+				return Err(err)
+			}).Then(func(ok interface{}) Option {
+				// This should not happen.
 				i++
 				Ω(true).Should(Equal(false))
 				return Ok(true)
 			}).Catch(func(err error) Option {
+				// This should happen.
 				i++
 				Ω(err).Should(HaveOccurred())
-				return Err(nil)
+				return Err(err)
 			})
-			Ω(i).Should(Equal(1))
+			Ω(i).Should(Equal(3))
 		})
 	})
 
