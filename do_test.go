@@ -13,17 +13,32 @@ import (
 var _ = Describe("Concurrency", func() {
 
 	Context("when using an optional value", func() {
-		It("should correctly chain calls to then", func() {
+		It("should correctly execute calls to then", func() {
+			i := 0
 			Ok(true).Then(func(ok interface{}) Option {
-				Ω(ok).Should(Equal(true))
-				return Ok(true)
-			}).Then(func(ok interface{}) Option {
+				i++
 				Ω(ok).Should(Equal(true))
 				return Err(errors.New("this is an error"))
-			}).Then(func(err interface{}) Option {
+			}).Then(func(ok interface{}) Option {
+				i++
 				Ω(true).Should(Equal(false))
 				return Err(nil)
 			})
+			Ω(i).Should(Equal(1))
+		})
+
+		It("should correctly execute calls to catch", func() {
+			i := 0
+			Err(errors.New("this is an error")).Then(func(ok interface{}) Option {
+				i++
+				Ω(true).Should(Equal(false))
+				return Ok(true)
+			}).Catch(func(err error) Option {
+				i++
+				Ω(err).Should(HaveOccurred())
+				return Err(nil)
+			})
+			Ω(i).Should(Equal(1))
 		})
 	})
 
