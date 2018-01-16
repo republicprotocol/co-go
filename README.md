@@ -20,14 +20,38 @@ It is the responsibility of the programmer to ensure that the function being use
 
 ## Process
 
-A `Process` is a function that is executed concurrently and its return value is written to a channel. Using channels to handle return values is simpler and safer than trying to synchronize using share memory. The official Go documentation recommends the use of channels over shared memory.
+A `Process` accepts a set of process functions that are executed concurrently and all return values are written to a channel. No specific order of return values being written to the channel is guranteed. Using channels to handle return values is simpler and safer than trying to synchronize using share memory. The official Go documentation recommends the use of channels over shared memory.
 
 ```go
-ret := <- do.Process(func() do.Option {
-    return do.Ok(40 + 2)
+ret := do.Process(func() do.Option {
+    return do.Ok(1)
+}, func() do.Option {
+    return do.Ok(2)
 })
-log.Println("42 =", ret)
+log.Println("First", <- ret)
+log.Println("Seconds", <- ret)
 ```
+
+### Begin and CoBegin
+
+The `Begin` and `CoBegin` functions accept a set of functions that are executed concurrently. Both functions will store the return values in an output list, where the order of outputs matches the order of the functions. Both functions will block until all functions have executed in full.
+
+```go
+results := do.Begin(func() do.Option {
+    return do.Ok(1)
+}, func() do.Option {
+    return do.Ok(2)
+})
+results = do.CoBegin(func() do.Option {
+    return do.Ok(results[0].Ok + results[1].Ok*2)
+}, func() do.Option {
+    return do.Ok(results[0].Ok + results[1].Ok*3)
+})
+log.Println("5 =", results[0])
+log.Println("7 =", results[1])
+```
+
+`Begin` function will use one goroutine per CPU and distribute the functions evenly over each goroutine. `CoBegin` will always use one goroutine per function.
 
 ## Tests
 
