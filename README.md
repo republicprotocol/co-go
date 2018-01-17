@@ -28,8 +28,8 @@ ret := do.Process(func() do.Option {
 }, func() do.Option {
     return do.Ok(2)
 })
-log.Println("First", <- ret)
-log.Println("Seconds", <- ret)
+log.Println("1st", <- ret)
+log.Println("2nd", <- ret)
 ```
 
 ### Begin and CoBegin

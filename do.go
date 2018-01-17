@@ -71,18 +71,28 @@ func ForAll(data interface{}, f func(i int)) {
 }
 
 // Process runs each function in a goroutine and writes the return values to a
-// channel.
+// channel. The values will be written to the channel in the same order that
+// the process functions are provided.
 func Process(fs ...func() Option) chan Option {
-	ch := make(chan Option)
+	guards := make([]*sync.Mutex, len(fs))
+	for i := range fs {
+		guards[i] = new(sync.Mutex)
+		guards[i].Lock()
+	}
+	ch := make(chan Option, len(fs))
 
 	// Create a wait group for all processes.
 	var wg sync.WaitGroup
 	wg.Add(len(fs))
-	for _, f := range fs {
-		go func(f func() Option) {
+	for i, f := range fs {
+		go func(i int, f func() Option) {
 			defer wg.Done()
+			defer guards[i].Unlock()
+			if i > 0 {
+				guards[i-1].Lock()
+			}
 			ch <- f()
-		}(f)
+		}(i, f)
 	}
 
 	// Run a goroutine that will close the channel when all processes have
