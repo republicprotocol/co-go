@@ -5,15 +5,19 @@
 
 The Do Concurrently library is a Go implementation of high level concurrent features. It provides a simple API for common task parallel and data parallel constructs. Using goroutines, the parallelism provided is actually a form of concurrency since goroutines are not guaranteed to run strict simultaneity.
 
-## For All
+## ForAll and CoForAll
 
-The `ForAll` loop is a data parallel loop that distributes iterations evenly across several goroutines. It will launch one goroutine per CPU, and can be used on arrays, maps, and slices.
+The `ForAll` and `CoForAll` loops are data parallel loops that distributes iterations evenly across several goroutines. The `ForAll` loop will use one goroutine per CPU and the `CoForAll` loop will use one goroutine per data item. Both loops work over arrays and slices. Both loops will block until all iterations have terminated.
 
 ```go
 xs := []int{1,2,3,4,5,6,7,8,10}
 do.ForAll(xs, func(i int) {
     xs[i] *= 2
 })
+do.CoForAll(xs, func(i int) {
+    xs[i] *= 3
+})
+log.Println("6 =", xs[0])
 ```
 
 It is the responsibility of the programmer to ensure that the function being used is safe for concurrent environments. A simple way of ensuring this is checking that the function will never mutate any object other than the object accessible using the `i` index. You can also use the go tools to check for race conditions during testing.
@@ -28,8 +32,8 @@ ret := do.Process(func() do.Option {
 }, func() do.Option {
     return do.Ok(2)
 })
-log.Println("1st", <- ret)
-log.Println("2nd", <- ret)
+log.Println("1 =", <- ret)
+log.Println("2 =", <- ret)
 ```
 
 ### Begin and CoBegin
@@ -37,18 +41,18 @@ log.Println("2nd", <- ret)
 The `Begin` and `CoBegin` functions accept a set of functions that are executed concurrently. Both functions will store the return values in an output list, where the order of outputs matches the order of the functions. Both functions will block until all functions have executed in full.
 
 ```go
-results := do.Begin(func() do.Option {
+ret := do.Begin(func() do.Option {
     return do.Ok(1)
 }, func() do.Option {
     return do.Ok(2)
 })
-results = do.CoBegin(func() do.Option {
-    return do.Ok(results[0].Ok + results[1].Ok*2)
+ret = do.CoBegin(func() do.Option {
+    return do.Ok(ret[0].Ok + ret[1].Ok*2)
 }, func() do.Option {
-    return do.Ok(results[0].Ok + results[1].Ok*3)
+    return do.Ok(ret[0].Ok + ret[1].Ok*3)
 })
-log.Println("5 =", results[0])
-log.Println("7 =", results[1])
+log.Println("5 =", ret[0])
+log.Println("7 =", ret[1])
 ```
 
 `Begin` function will use one goroutine per CPU and distribute the functions evenly over each goroutine. `CoBegin` will always use one goroutine per function.
