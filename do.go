@@ -20,7 +20,7 @@ func Ok(ok interface{}) Option {
 	}
 }
 
-// Err returns a Return struct with an error and no value.
+// Err returns an Option struct with an error and no value.
 func Err(err error) Option {
 	return Option{
 		Err: err,
