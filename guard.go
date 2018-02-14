@@ -1,6 +1,7 @@
 package do
 
 import (
+	"log"
 	"sync"
 )
 
@@ -9,41 +10,40 @@ import (
 // safe to use concurrently.
 type Guard struct {
 	condition     func() bool
-	conditionOpen bool
 	conditionWait chan struct{}
 }
 
 func newGuard(condition func() bool) Guard {
 	guard := Guard{
 		condition:     condition,
-		conditionOpen: condition(),
 		conditionWait: make(chan struct{}, 1),
 	}
-	if guard.conditionOpen {
+	if guard.condition() {
 		guard.conditionWait <- struct{}{}
 	}
 	return guard
 }
 
 func (guard *Guard) open() {
-	if guard.conditionOpen {
-		return
+	select {
+	case guard.conditionWait <- struct{}{}:
+		log.Println("open explicit")
+	default:
+		log.Println("open implicit")
 	}
-	guard.conditionOpen = true
-	guard.conditionWait <- struct{}{}
 }
 
 func (guard *Guard) close() {
-	if !guard.conditionOpen {
-		return
+	select {
+	case <-guard.conditionWait:
+		log.Println("close explicit")
+	default:
+		log.Println("close implicit")
 	}
-	guard.conditionOpen = false
-	<-guard.conditionWait
 }
 
 func (guard *Guard) wait() {
 	<-guard.conditionWait
-	guard.conditionOpen = false
 }
 
 // A GuardedObject uses Guards to provide safe concurrent access to an object.
@@ -80,7 +80,17 @@ func (object *GuardedObject) Guard(condition func() bool) *Guard {
 // is true.
 func (object *GuardedObject) Enter(guard *Guard) {
 	if guard != nil {
-		guard.wait()
+		while := true
+		for while {
+			object.mu.Lock()
+			select {
+			case <-guard.conditionWait:
+				while = false
+			default:
+				object.mu.Unlock()
+			}
+		}
+		return
 	}
 	object.mu.Lock()
 }

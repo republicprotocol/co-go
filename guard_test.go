@@ -1,6 +1,8 @@
 package do_test
 
 import (
+	"log"
+
 	. "github.com/onsi/ginkgo"
 	// . "github.com/onsi/gomega"
 
@@ -26,6 +28,7 @@ func (obj *mockObject) Notify(notification interface{}) {
 	obj.Enter(nil)
 	defer obj.Exit()
 
+	log.Println("Notify")
 	obj.notifications = append(obj.notifications, notification)
 }
 
@@ -33,6 +36,7 @@ func (obj *mockObject) Notification() interface{} {
 	obj.Enter(obj.notificationsLeftGuard)
 	defer obj.Exit()
 
+	log.Println("Notification", len(obj.notifications))
 	ret := obj.notifications[0]
 	if len(obj.notifications) == 1 {
 		obj.notifications = []interface{}{}
@@ -55,25 +59,22 @@ var _ = Describe("Mutual exclusion", func() {
 
 		It("should not produce any racing errors", func() {
 			obj := newMockObject()
-			CoBegin(func() Option {
-				ps := make([]int, 1000)
-				CoForAll(ps, func(i int) {
-					obj.Notification()
+			for {
+				log.Println("=================")
+				CoBegin(func() Option {
+					ps := make([]int, 3)
+					CoForAll(ps, func(i int) {
+						obj.Notification()
+					})
+					return Ok(nil)
+				}, func() Option {
+					ps := make([]int, 3)
+					CoForAll(ps, func(i int) {
+						obj.Notify(i)
+					})
+					return Ok(nil)
 				})
-				return Ok(nil)
-			}, func() Option {
-				ps := make([]int, 1000)
-				CoForAll(ps, func(i int) {
-					obj.Notify(i)
-				})
-				return Ok(nil)
-			}, func() Option {
-				ps := make([]int, 1000)
-				CoForAll(ps, func(i int) {
-					obj.NotificationsWaiting()
-				})
-				return Ok(nil)
-			})
+			}
 		})
 
 	})
