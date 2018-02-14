@@ -75,6 +75,7 @@ type Stack struct {
 
 func NewStack() *Stack {
     s := new(Stack)
+    s.GuardedObject = do.NewGuardedObject()
     s.i = 0
     s.items = make([]interface{}, 10)
     s.itemsNotEmpty = q.Guard(func() bool { return len(q.items) > 0 })
