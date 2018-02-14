@@ -1,63 +1,58 @@
 package do
 
 import (
-	"log"
 	"sync"
 )
 
-// A Guard is a conditional variable used for entry into a function. It allows
-// a function to wait for a condition to be true before executing. It is not
-// safe to use concurrently.
+// A Guard is a conditional variable that has be specialized for the
+// GuardedObject. It should only ever be created by using a GuardedObject and
+// should only ever be used when entering a GuardedObject.
 type Guard struct {
-	condition     func() bool
-	conditionWait chan struct{}
+	condition       func() bool
+	conditionSignal chan struct{}
 }
 
 func newGuard(condition func() bool) Guard {
 	guard := Guard{
-		condition:     condition,
-		conditionWait: make(chan struct{}, 1),
+		condition:       condition,
+		conditionSignal: make(chan struct{}, 1),
 	}
 	if guard.condition() {
-		guard.conditionWait <- struct{}{}
+		guard.conditionSignal <- struct{}{}
 	}
 	return guard
 }
 
 func (guard *Guard) open() {
 	select {
-	case guard.conditionWait <- struct{}{}:
-		log.Println("open explicit")
+	case guard.conditionSignal <- struct{}{}:
 	default:
-		log.Println("open implicit")
 	}
 }
 
 func (guard *Guard) close() {
 	select {
-	case <-guard.conditionWait:
-		log.Println("close explicit")
+	case <-guard.conditionSignal:
 	default:
-		log.Println("close implicit")
 	}
 }
 
 func (guard *Guard) wait() {
-	<-guard.conditionWait
+	<-guard.conditionSignal
 }
 
-// A GuardedObject uses Guards to provide safe concurrent access to an object.
-// The object should use a GuardedObject to create Guards, and each function
-// that accesses the object must call the Enter and Exit functions at the
-// beginning and end of the function. A Guard can optionally be passed to the
-// Enter function, as long as the Guard was created using the same
-// GuardedObject. By doing this, the function will no execute until the Guard
-// condition is true.
+// A GuardedObject is used to provide safe concurrent read and write access to
+// an object that is accessed concurrently. To be protected, an object should
+// call Enter at the beginning of every method that accesses it, and call Exit
+// at the end of every method that accesses it. A GuardedObject can also define
+// conditional Guards that will block at a call to Enter, until a given
+// condition is met.
 type GuardedObject struct {
 	mu     *sync.RWMutex
 	guards []Guard
 }
 
+// NewGuardedObject returns a new GuardedObject with no Guards defined.
 func NewGuardedObject() GuardedObject {
 	return GuardedObject{
 		mu:     new(sync.RWMutex),
@@ -65,9 +60,11 @@ func NewGuardedObject() GuardedObject {
 	}
 }
 
-// Guard returns a Guard for use with this GuardedObject, that waits for the
-// condition to be true. The Guard condition must be read-only and make no
-// changes to non-local variables.
+// Guard this GuardedObject with a certain condition. The conditional lambda
+// function must not modify any non-local variables. The Guard returned can be
+// passed to a call to the Enter function, blocking the call until the
+// condition is met. The conditions will automatically be re-evaluated. A Guard
+// must only be used with the GuardedObject that created it.
 func (object *GuardedObject) Guard(condition func() bool) *Guard {
 	guard := newGuard(condition)
 	object.mu = new(sync.RWMutex)
@@ -75,47 +72,64 @@ func (object *GuardedObject) Guard(condition func() bool) *Guard {
 	return &object.guards[len(object.guards)-1]
 }
 
-// Enter the GuardedObject. Exit must be called after a call to Enter. If a
-// Guard is passed to this function it will block until the Guard condition
-// is true.
+// Enter the GuardedObject. This will acquire a write lock to the
+// GuardedObject. If a Guard is passed, then the write lock will not be
+// acquired unless the condition is met. Exit must always be called after the
+// lock is no longer needed. Between the calls Enter and Exit no other
+// goroutine will have access to the GuardedObject. The condition on the Guard
+// is guaranteed to hold immediately after a goroutine has passed the Enter
+// function.
 func (object *GuardedObject) Enter(guard *Guard) {
+	// If there is no Guard to wait on, acquire a write lock on the
+	// GuardedObject.
 	if guard == nil {
 		object.mu.Lock()
 		return
 	}
-
-	wait := true
-	for wait {
-		<-guard.conditionWait
+	for {
+		// Wait for the Guard to be signaled on the condition.
+		guard.wait()
+		// Acquire a write lock to the GuardedObject.
 		object.mu.Lock()
-		wait = false
-		if !guard.condition() {
-			object.mu.Unlock()
-			wait = true
+		// Check that the condition is still true. It is possible that between
+		// receiving the signal on the condition, and acquiring the write lock,
+		// the conidition has changed.
+		if guard.condition() {
+			break
 		}
+		// If the condition is no longer true, release the write lock and try
+		// again.
+		object.mu.Unlock()
 	}
 }
 
-// EnterReadOnly will enter the GuardedObject but only acquire a read lock. Any
-// function that uses EnterReadOnly to protect an object must make sure that it
-// does not modify the object. ExitReadOnly must be called after a call to
-// EnterReadOnly.
+// EnterReadOnly is similar to Enter, but it acquires a read lock. The
+// protected object, and any value used by a conditional Guard, must not be
+// modified. ExitReadOnly must be called instead of Exit.
 func (object *GuardedObject) EnterReadOnly(guard *Guard) {
-	if guard != nil {
-		guard.wait()
+	if guard == nil {
+		object.mu.RLock()
+		return
 	}
-	object.mu.RLock()
+	for {
+		guard.wait()
+		object.mu.RLock()
+		if guard.condition() {
+			break
+		}
+		object.mu.RUnlock()
+	}
 }
 
 // Exit the GuardedObject. All Guards attached to the GuardedObject will be
-// re-evaluated. This must not be called unless a call to Enter has already
-// been made.
+// re-evaluated before the GuardedObject can be entered again. This must not be
+// called unless a call to Enter has already been made.
 func (object *GuardedObject) Exit() {
 	object.resolveGuards()
 	object.mu.Unlock()
 }
 
-// ExitReadOnly is the same as Exit, but it must not be called unless a call to
+// ExitReadOnly is similar to Exit, but it must not be called unless a call to
 // EnterReadOnly has already been made.
 func (object *GuardedObject) ExitReadOnly() {
 	object.resolveGuards()
@@ -126,8 +140,8 @@ func (object *GuardedObject) resolveGuards() {
 	for i := range object.guards {
 		if object.guards[i].condition() {
 			object.guards[i].open()
-		} else {
-			object.guards[i].close()
+			continue
 		}
+		object.guards[i].close()
 	}
 }
