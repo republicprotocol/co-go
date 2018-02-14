@@ -79,20 +79,21 @@ func (object *GuardedObject) Guard(condition func() bool) *Guard {
 // Guard is passed to this function it will block until the Guard condition
 // is true.
 func (object *GuardedObject) Enter(guard *Guard) {
-	if guard != nil {
-		while := true
-		for while {
-			object.mu.Lock()
-			select {
-			case <-guard.conditionWait:
-				while = false
-			default:
-				object.mu.Unlock()
-			}
-		}
+	if guard == nil {
+		object.mu.Lock()
 		return
 	}
-	object.mu.Lock()
+
+	wait := true
+	for wait {
+		<-guard.conditionWait
+		object.mu.Lock()
+		wait = false
+		if !guard.condition() {
+			object.mu.Unlock()
+			wait = true
+		}
+	}
 }
 
 // EnterReadOnly will enter the GuardedObject but only acquire a read lock. Any
