@@ -67,7 +67,6 @@ func NewGuardedObject() GuardedObject {
 // must only be used with the GuardedObject that created it.
 func (object *GuardedObject) Guard(condition func() bool) *Guard {
 	guard := newGuard(condition)
-	object.mu = new(sync.RWMutex)
 	object.guards = append(object.guards, guard)
 	return &object.guards[len(object.guards)-1]
 }
