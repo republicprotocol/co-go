@@ -57,6 +57,47 @@ log.Println("7 =", ret[1])
 
 `Begin` function will use one goroutine per CPU and distribute the functions evenly over each goroutine. `CoBegin` will always use one goroutine per function.
 
+### Guarded Objects
+
+Using the `GuardedObject` you can provide safe concurrent access to an object. Using the `Enter` and `Exit` functions you can guarantee that the object is being accessed mutually exclusively. In addition to this, you can define `Guards` and pass them to `Enter` to make sure that the object is only accessed if a certain boolean condition is true.
+
+Below is an example of a concurrent `Stack`. If it is full, a call to `Push` function will not overflow. Instead, it will wait until the `Stack` is not full and then continue. Similarly, the `Pop` function will not underflow.
+
+```go
+type Stack struct {
+    do.GuardedObject
+
+    i             int
+    items         []interface{}
+    itemsNotEmpty *do.Guard
+    itemsNotFull  *do.Guard
+}
+
+func NewStack() *Stack {
+    s := new(Stack)
+    s.GuardedObject = do.NewGuardedObject()
+    s.i = 0
+    s.items = make([]interface{}, 10)
+    s.itemsNotEmpty = q.Guard(func() bool { return len(q.items) > 0 })
+    s.itemsNotFull = q.Guard(func() bool { return len(q.items) < 10 })
+    return q
+}
+
+func (s *Stack) Push(item interface{}) {
+    s.Enter(s.isListNotFull)
+    defer s.Exit()
+    s.items[i] = item
+    s.i++
+}
+
+func (s *Stack) Pop() (item interface{}) {
+    s.Enter(s.isListNotEmpty)
+    defer s.Exit()
+    item = s.items[i]
+    s.i--
+}
+```
+
 ## Tests
 
 To run the test suite, install Ginkgo.
