@@ -1,4 +1,4 @@
-package do_test
+package co_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestGoAsync(t *testing.T) {
+func TestCogo(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Concurrency Suite")
+	RunSpecs(t, "Cogo Suite")
 }
